@@ -1,0 +1,7 @@
+{
+  "name": "BlockStack",
+  "description": "Stack blocks perfectly in this addictive 3D tower game on Base",
+  "category": "game",
+  "tags": ["arcade", "casual", "3d", "highscore"],
+  "url": "https://blockstack.vercel.app"
+}

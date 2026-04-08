@@ -1,65 +1,156 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { ConnectWallet } from '@/components/ui/ConnectWallet';
+import { Button } from '@/components/ui/Button';
+import { useSpring, animated } from '@react-spring/web';
+import { useWallet } from '@/hooks/useWallet';
+
+export default function LandingPage() {
+  const router = useRouter();
+  const { play, checkIn, isConnected, login, canCheckIn } = useWallet();
+  const [playLoading, setPlayLoading] = useState(false);
+  const [checkInLoading, setCheckInLoading] = useState(false);
+  const [checkInDone, setCheckInDone] = useState(false);
+
+  const titleSpring = useSpring({
+    from: { opacity: 0, y: -30 },
+    to: { opacity: 1, y: 0 },
+    delay: 200,
+  });
+
+  const subtitleSpring = useSpring({
+    from: { opacity: 0, y: 20 },
+    to: { opacity: 1, y: 0 },
+    delay: 500,
+  });
+
+  const buttonSpring = useSpring({
+    from: { opacity: 0, scale: 0.8 },
+    to: { opacity: 1, scale: 1 },
+    delay: 800,
+  });
+
+  const handlePlay = async () => {
+    if (!isConnected) {
+      login();
+      return;
+    }
+    setPlayLoading(true);
+    const success = await play();
+    setPlayLoading(false);
+    if (success) {
+      router.push('/game');
+    }
+  };
+
+  const handleCheckIn = async () => {
+    if (!isConnected) {
+      login();
+      return;
+    }
+    setCheckInLoading(true);
+    const success = await checkIn();
+    setCheckInLoading(false);
+    if (success) setCheckInDone(true);
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="h-full game-gradient flex flex-col items-center justify-center relative overflow-hidden">
+      {/* Decorative floating blocks */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[15%] left-[10%] w-16 h-16 bg-white/10 rounded-lg rotate-12 animate-float" />
+        <div
+          className="absolute top-[25%] right-[15%] w-12 h-12 bg-white/8 rounded-lg -rotate-6 animate-float"
+          style={{ animationDelay: '1s' }}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+        <div
+          className="absolute bottom-[30%] left-[20%] w-10 h-10 bg-white/5 rounded-lg rotate-45 animate-float"
+          style={{ animationDelay: '2s' }}
+        />
+        <div
+          className="absolute bottom-[20%] right-[10%] w-14 h-14 bg-white/10 rounded-lg -rotate-12 animate-float"
+          style={{ animationDelay: '0.5s' }}
+        />
+      </div>
+
+      {/* Wallet connect */}
+      <div className="absolute top-6 right-6 z-10">
+        <ConnectWallet />
+      </div>
+
+      {/* Main content */}
+      <div className="flex flex-col items-center gap-8 z-10 px-6">
+        <animated.div
+          style={{
+            opacity: titleSpring.opacity,
+            transform: titleSpring.y.to((y) => `translateY(${y}px)`),
+          }}
+          className="text-center"
+        >
+          <h1 className="text-7xl md:text-8xl font-bold text-white text-glow tracking-tight">
+            Block
+            <span className="bg-gradient-to-r from-yellow-200 to-yellow-400 bg-clip-text text-transparent">
+              Stack
+            </span>
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+        </animated.div>
+
+        <animated.p
+          style={{
+            opacity: subtitleSpring.opacity,
+            transform: subtitleSpring.y.to((y) => `translateY(${y}px)`),
+          }}
+          className="text-xl text-white/70 text-center max-w-md"
+        >
+          Stack blocks. Beat scores. Compete on-chain.
+        </animated.p>
+
+        <animated.div
+          style={{
+            opacity: buttonSpring.opacity,
+            transform: buttonSpring.scale.to((s) => `scale(${s})`),
+          }}
+          className="flex flex-col items-center gap-4 mt-4"
+        >
+          <Button
+            variant="primary"
+            size="lg"
+            onClick={handlePlay}
+            disabled={playLoading}
+            className="text-xl w-64 px-16 py-6 rounded-full shadow-2xl shadow-white/25"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            {playLoading ? 'Confirming...' : 'Play Game'}
+          </Button>
+
+          <Button
+            variant="primary"
+            size="lg"
+            onClick={handleCheckIn}
+            disabled={checkInLoading || checkInDone || !canCheckIn}
+            className="text-xl w-64 px-16 py-6 rounded-full shadow-2xl shadow-white/25"
           >
-            Documentation
-          </a>
-        </div>
-      </main>
+            {checkInLoading ? 'Confirming...' : (checkInDone || !canCheckIn) ? 'Checked in!' : 'Check-in'}
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="md"
+            onClick={() => router.push('/leaderboard')}
+          >
+            Leaderboard
+          </Button>
+        </animated.div>
+
+        <animated.div
+          style={{ opacity: subtitleSpring.opacity }}
+          className="flex items-center gap-2 mt-8 text-white/40 text-sm"
+        >
+          <span>Built on</span>
+          <span className="font-semibold text-white/60">Base</span>
+        </animated.div>
+      </div>
     </div>
   );
 }
