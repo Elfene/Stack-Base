@@ -1,0 +1,21 @@
+{
+  "accountAssociation": {
+    "header": "eyJmaWQiOjAsInR5cGUiOiJjdXN0b2R5Iiwia2V5IjoiMHgwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwIn0",
+    "payload": "eyJkb21haW4iOiJzdGFja2Jhc2VkLnZlcmNlbC5hcHAifQ",
+    "signature": "0x00"
+  },
+  "miniapp": {
+    "version": "1",
+    "name": "BlockStack",
+    "description": "Addictive 3D tower stacking game on Base. Stack blocks perfectly, earn combos, mint your player NFT, and compete on the on-chain leaderboard.",
+    "iconUrl": "https://stackbased.vercel.app/app-icon.png",
+    "homeUrl": "https://stackbased.vercel.app",
+    "splashImageUrl": "https://stackbased.vercel.app/app-icon.png",
+    "splashBackgroundColor": "#667eea",
+    "webhookUrl": "",
+    "primaryCategory": "games",
+    "tags": ["arcade", "casual", "3d", "highscore", "base"],
+    "requiredChains": ["eip155:8453"],
+    "requiredCapabilities": []
+  }
+}
