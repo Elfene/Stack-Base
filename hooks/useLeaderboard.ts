@@ -1,7 +1,6 @@
 'use client';
 
-import { useReadContract } from 'wagmi';
-import { CONTRACT_ADDRESS, CONTRACT_ABI } from '@/lib/constants';
+import { useState, useEffect, useCallback } from 'react';
 
 export interface LeaderboardEntry {
   player: string;
@@ -9,24 +8,27 @@ export interface LeaderboardEntry {
   timestamp: number;
 }
 
-export function useLeaderboard(limit = 50) {
-  const { data, isLoading, refetch } = useReadContract({
-    address: CONTRACT_ADDRESS,
-    abi: CONTRACT_ABI,
-    functionName: 'getLeaderboard',
-    args: [BigInt(limit)],
-    query: {
-      refetchInterval: 30000,
-    },
-  });
+export function useLeaderboard() {
+  const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const entries: LeaderboardEntry[] = data
-    ? (data as Array<{ player: string; score: bigint; timestamp: bigint }>).map((entry) => ({
-        player: entry.player,
-        score: Number(entry.score),
-        timestamp: Number(entry.timestamp),
-      }))
-    : [];
+  const fetchLeaderboard = useCallback(async () => {
+    try {
+      const res = await fetch('/api/leaderboard');
+      const data = await res.json();
+      setEntries(data.entries || []);
+    } catch {
+      setEntries([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
-  return { entries, isLoading, refetch };
+  useEffect(() => {
+    fetchLeaderboard();
+    const interval = setInterval(fetchLeaderboard, 30000);
+    return () => clearInterval(interval);
+  }, [fetchLeaderboard]);
+
+  return { entries, isLoading, refetch: fetchLeaderboard };
 }

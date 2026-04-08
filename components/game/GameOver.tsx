@@ -16,7 +16,7 @@ export function GameOver({ onPlayAgain }: GameOverProps) {
   const score = useGameState((s) => s.score);
   const highScore = useGameState((s) => s.highScore);
   const isNewHighScore = score > highScore && highScore > 0;
-  const { submitScore, isConnected, login } = useWallet();
+  const { submitScore, isConnected, login, address } = useWallet();
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
@@ -37,9 +37,32 @@ export function GameOver({ onPlayAgain }: GameOverProps) {
 
   const handleSubmitScore = async () => {
     setSubmitting(true);
-    const success = await submitScore(score);
-    setSubmitting(false);
-    if (success) setSubmitted(true);
+
+    const submitToRedis = async () => {
+      try {
+        const playerAddr = address || `0x${Array.from({ length: 40 }, () => '0123456789abcdef'[Math.floor(Math.random() * 16)]).join('')}`;
+        await fetch('/api/leaderboard', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ player: playerAddr, score }),
+        });
+      } catch {}
+    };
+
+    if (isConnected) {
+      const [onChain] = await Promise.allSettled([
+        submitScore(score),
+        submitToRedis(),
+      ]);
+      setSubmitting(false);
+      if (onChain.status === 'fulfilled' && onChain.value) {
+        setSubmitted(true);
+      }
+    } else {
+      await submitToRedis();
+      setSubmitting(false);
+      setSubmitted(true);
+    }
   };
 
   if (phase !== 'gameover') return null;
@@ -76,7 +99,6 @@ export function GameOver({ onPlayAgain }: GameOverProps) {
             <Button
               onClick={(e) => {
                 e.stopPropagation();
-                if (!isConnected) { login(); return; }
                 handleSubmitScore();
               }}
               variant="secondary"
@@ -89,7 +111,7 @@ export function GameOver({ onPlayAgain }: GameOverProps) {
 
           {submitted && (
             <p className="text-green-400 text-sm font-medium">
-              Score submitted on-chain!
+              Score submitted!
             </p>
           )}
         </div>

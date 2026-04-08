@@ -20,7 +20,7 @@ function formatDate(timestamp: number) {
 
 export default function LeaderboardPage() {
   const router = useRouter();
-  const { entries, isLoading } = useLeaderboard(50);
+  const { entries, isLoading } = useLeaderboard();
   const { address } = useAccount();
 
   const headerSpring = useSpring({
@@ -28,20 +28,9 @@ export default function LeaderboardPage() {
     to: { opacity: 1, y: 0 },
   });
 
-  const hasEntries = entries.length > 0;
-
-  const demoEntries = hasEntries
-    ? entries
-    : Array.from({ length: 10 }, (_, i) => ({
-        player: `0x${(i + 1).toString(16).padStart(40, '0')}`,
-        score: Math.max(100 - i * 8, 5),
-        timestamp: Math.floor(Date.now() / 1000) - i * 86400,
-      }));
-
   return (
     <div className="h-full game-gradient overflow-auto">
       <div className="max-w-2xl mx-auto px-6 py-8">
-        {/* Header */}
         <animated.div
           style={{
             opacity: headerSpring.opacity,
@@ -67,9 +56,7 @@ export default function LeaderboardPage() {
           </Button>
         </animated.div>
 
-        {/* Table */}
         <div className="glass rounded-2xl overflow-hidden">
-          {/* Table header */}
           <div className="grid grid-cols-[60px_1fr_100px_80px] px-6 py-4 text-sm font-semibold text-white/50 border-b border-white/10">
             <span>Rank</span>
             <span>Player</span>
@@ -77,14 +64,17 @@ export default function LeaderboardPage() {
             <span className="text-right">Date</span>
           </div>
 
-          {/* Rows */}
           {isLoading ? (
             <div className="px-6 py-12 text-center text-white/40">
               Loading scores...
             </div>
+          ) : entries.length === 0 ? (
+            <div className="px-6 py-12 text-center text-white/40">
+              No scores yet. Be the first!
+            </div>
           ) : (
             <div className="divide-y divide-white/5">
-              {demoEntries.map((entry, i) => {
+              {entries.map((entry, i) => {
                 const isCurrentPlayer =
                   address?.toLowerCase() === entry.player.toLowerCase();
                 const rankColors = [
@@ -97,23 +87,13 @@ export default function LeaderboardPage() {
                   <div
                     key={i}
                     className={`grid grid-cols-[60px_1fr_100px_80px] px-6 py-4 items-center transition-colors ${
-                      isCurrentPlayer
-                        ? 'bg-white/10'
-                        : 'hover:bg-white/5'
+                      isCurrentPlayer ? 'bg-white/10' : 'hover:bg-white/5'
                     }`}
                   >
-                    <span
-                      className={`font-bold text-lg ${
-                        rankColors[i] || 'text-white/40'
-                      }`}
-                    >
+                    <span className={`font-bold text-lg ${rankColors[i] || 'text-white/40'}`}>
                       #{i + 1}
                     </span>
-                    <span
-                      className={`font-mono text-sm ${
-                        isCurrentPlayer ? 'text-white font-bold' : 'text-white/70'
-                      }`}
-                    >
+                    <span className={`font-mono text-sm ${isCurrentPlayer ? 'text-white font-bold' : 'text-white/70'}`}>
                       {shortenAddress(entry.player)}
                       {isCurrentPlayer && (
                         <span className="ml-2 text-xs text-yellow-300">(you)</span>
@@ -128,12 +108,6 @@ export default function LeaderboardPage() {
                   </div>
                 );
               })}
-            </div>
-          )}
-
-          {!hasEntries && !isLoading && (
-            <div className="px-6 py-4 text-center text-white/30 text-sm border-t border-white/10">
-              Demo data shown — connect contract to see live scores
             </div>
           )}
         </div>
