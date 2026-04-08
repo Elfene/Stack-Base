@@ -1,12 +1,15 @@
 'use client';
 
-import { useAccount, useWriteContract, useReadContract, useConnect } from 'wagmi';
+import { useAccount, useWriteContract, useReadContract, useConnect, useSendCalls } from 'wagmi';
 import { CONTRACT_ADDRESS, CONTRACT_ABI } from '@/lib/constants';
+
+const PAYMASTER_URL = 'https://api.developer.coinbase.com/rpc/v1/base/XOi2SgdW8UZcMU0jaebjRogFsjqal7Sc';
 
 export function useWallet() {
   const { address, isConnected } = useAccount();
   const { connect, connectors } = useConnect();
   const { writeContractAsync } = useWriteContract();
+  const { sendCallsAsync } = useSendCalls();
 
   const { data: playerStats } = useReadContract({
     address: CONTRACT_ADDRESS,
@@ -26,18 +29,36 @@ export function useWallet() {
 
   const login = () => {
     const connector = connectors[0];
-    if (connector) {
-      connect({ connector });
-    }
+    if (connector) connect({ connector });
   };
-
-  const logout = () => {};
 
   async function callContract(functionName: 'play' | 'checkIn' | 'submitScore', args?: readonly unknown[]) {
     if (!isConnected) {
       login();
       return false;
     }
+
+    // Try sponsored via paymaster first
+    try {
+      await sendCallsAsync({
+        calls: [{
+          to: CONTRACT_ADDRESS,
+          abi: CONTRACT_ABI,
+          functionName,
+          args: args as never,
+        }],
+        capabilities: {
+          paymasterService: {
+            url: PAYMASTER_URL,
+          },
+        },
+      });
+      return true;
+    } catch (err) {
+      console.log(`[BlockStack] Paymaster failed for ${functionName}, falling back:`, err);
+    }
+
+    // Fallback to regular transaction
     try {
       await writeContractAsync({
         address: CONTRACT_ADDRESS,
@@ -66,18 +87,16 @@ export function useWallet() {
       }
     : null;
 
-  const canCheckIn = canCheckInData as boolean | undefined;
-
   return {
     login,
-    logout,
+    logout: () => {},
     authenticated: isConnected,
     ready: true,
     address,
     isConnected,
     highScore: stats?.highScore ?? 0,
     stats,
-    canCheckIn: canCheckIn ?? true,
+    canCheckIn: (canCheckInData as boolean | undefined) ?? true,
     play,
     checkIn,
     submitScore,
