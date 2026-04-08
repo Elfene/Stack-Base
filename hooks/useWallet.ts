@@ -1,49 +1,12 @@
 'use client';
 
-import { useAccount, useWriteContract, useReadContract, useSendCalls } from 'wagmi';
+import { useAccount, useWriteContract, useReadContract, useConnect } from 'wagmi';
 import { CONTRACT_ADDRESS, CONTRACT_ABI } from '@/lib/constants';
 
-const PAYMASTER_URL = process.env.NEXT_PUBLIC_PAYMASTER_URL || '';
-
-let usePrivyHook: () => {
-  login: () => void;
-  logout: () => void;
-  authenticated: boolean;
-  ready: boolean;
-};
-
-try {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const privyModule = require('@privy-io/react-auth');
-  usePrivyHook = privyModule.usePrivy;
-} catch {
-  usePrivyHook = () => ({
-    login: () => {},
-    logout: () => {},
-    authenticated: false,
-    ready: true,
-  });
-}
-
 export function useWallet() {
-  let login = () => {};
-  let logout = () => {};
-  let authenticated = false;
-  let ready = true;
-
-  try {
-    const privy = usePrivyHook();
-    login = privy.login;
-    logout = privy.logout;
-    authenticated = privy.authenticated;
-    ready = privy.ready;
-  } catch {
-    // Privy not available
-  }
-
   const { address, isConnected } = useAccount();
+  const { connect, connectors } = useConnect();
   const { writeContractAsync } = useWriteContract();
-  const { sendCallsAsync } = useSendCalls();
 
   const { data: playerStats } = useReadContract({
     address: CONTRACT_ADDRESS,
@@ -61,53 +24,37 @@ export function useWallet() {
     query: { enabled: !!address, refetchInterval: 60000 },
   });
 
-  async function sponsoredCall(functionName: 'play' | 'checkIn' | 'submitScore', args?: readonly unknown[]) {
-    if (PAYMASTER_URL) {
-      try {
-        await sendCallsAsync({
-          calls: [
-            {
-              to: CONTRACT_ADDRESS,
-              abi: CONTRACT_ABI,
-              functionName,
-              args: args as never,
-            },
-          ],
-          capabilities: {
-            paymasterService: {
-              url: PAYMASTER_URL,
-            },
-          },
-        });
-        return true;
-      } catch {
-        // fallback to regular tx if paymaster fails
-      }
+  const login = () => {
+    const connector = connectors[0];
+    if (connector) {
+      connect({ connector });
     }
+  };
 
-    await writeContractAsync({
-      address: CONTRACT_ADDRESS,
-      abi: CONTRACT_ABI,
-      functionName,
-      args: args as never,
-    });
-    return true;
+  const logout = () => {};
+
+  async function callContract(functionName: 'play' | 'checkIn' | 'submitScore', args?: readonly unknown[]) {
+    if (!isConnected) {
+      login();
+      return false;
+    }
+    try {
+      await writeContractAsync({
+        address: CONTRACT_ADDRESS,
+        abi: CONTRACT_ABI,
+        functionName,
+        args: args as never,
+      });
+      return true;
+    } catch (err) {
+      console.error(`[BlockStack] ${functionName} failed:`, err);
+      return false;
+    }
   }
 
-  const play = async () => {
-    if (!isConnected) { login(); return false; }
-    try { return await sponsoredCall('play'); } catch { return false; }
-  };
-
-  const checkIn = async () => {
-    if (!isConnected) { login(); return false; }
-    try { return await sponsoredCall('checkIn'); } catch { return false; }
-  };
-
-  const submitScore = async (score: number) => {
-    if (!isConnected) { login(); return false; }
-    try { return await sponsoredCall('submitScore', [BigInt(score)]); } catch { return false; }
-  };
+  const play = () => callContract('play');
+  const checkIn = () => callContract('checkIn');
+  const submitScore = (score: number) => callContract('submitScore', [BigInt(score)]);
 
   const stats = playerStats
     ? {
@@ -124,8 +71,8 @@ export function useWallet() {
   return {
     login,
     logout,
-    authenticated,
-    ready,
+    authenticated: isConnected,
+    ready: true,
     address,
     isConnected,
     highScore: stats?.highScore ?? 0,

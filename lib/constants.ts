@@ -12,8 +12,7 @@ export const GAME_CONFIG = {
   MAX_SPEED: 3,
 } as const;
 
-export const CONTRACT_ADDRESS = (process.env.NEXT_PUBLIC_CONTRACT_ADDRESS ||
-  '0x0000000000000000000000000000000000000000') as `0x${string}`;
+export const CONTRACT_ADDRESS = '0x1D2a28E9dd71A9252ECdB184EEa20B6876F8e29E' as const;
 
 export const BASE_CHAIN_ID = 8453;
 export const BASE_SEPOLIA_CHAIN_ID = 84532;
