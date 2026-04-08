@@ -22,6 +22,9 @@ export const metadata: Metadata = {
     description: 'Stack blocks perfectly in this addictive 3D tower game on Base',
     images: ['/thumbnail.png'],
   },
+  other: {
+    'base:app_id': '69cad0ab33aaaac28015a4a1',
+  },
 };
 
 export const viewport: Viewport = {

@@ -9,10 +9,11 @@ import { useWallet } from '@/hooks/useWallet';
 
 export default function LandingPage() {
   const router = useRouter();
-  const { play, checkIn, isConnected, login, canCheckIn } = useWallet();
+  const { play, checkIn, isConnected, login, canCheckIn, stats } = useWallet();
   const [playLoading, setPlayLoading] = useState(false);
   const [checkInLoading, setCheckInLoading] = useState(false);
   const [checkInDone, setCheckInDone] = useState(false);
+  const [showMintPopup, setShowMintPopup] = useState(false);
 
   const titleSpring = useSpring({
     from: { opacity: 0, y: -30 },
@@ -32,16 +33,31 @@ export default function LandingPage() {
     delay: 800,
   });
 
+  const mintSpring = useSpring({
+    opacity: showMintPopup ? 1 : 0,
+    scale: showMintPopup ? 1 : 0.8,
+    config: { tension: 250, friction: 20 },
+  });
+
   const handlePlay = async () => {
     if (!isConnected) {
       login();
       return;
     }
+    const isFirstGame = !stats?.hasNFT;
     setPlayLoading(true);
     const success = await play();
     setPlayLoading(false);
     if (success) {
-      router.push('/game');
+      if (isFirstGame) {
+        setShowMintPopup(true);
+        setTimeout(() => {
+          setShowMintPopup(false);
+          router.push('/game');
+        }, 3000);
+      } else {
+        router.push('/game');
+      }
     }
   };
 
@@ -151,6 +167,26 @@ export default function LandingPage() {
           <span className="font-semibold text-white/60">Base</span>
         </animated.div>
       </div>
+
+      {/* NFT Mint Popup */}
+      {showMintPopup && (
+        <animated.div
+          style={{
+            opacity: mintSpring.opacity,
+            transform: mintSpring.scale.to((s) => `scale(${s})`),
+          }}
+          className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+        >
+          <div className="glass rounded-3xl p-8 max-w-sm w-full mx-4 text-center">
+            <div className="text-6xl mb-4">🎉</div>
+            <h2 className="text-3xl font-bold text-white mb-2">NFT Minted!</h2>
+            <p className="text-white/70 text-lg mb-2">
+              Your <span className="font-bold text-yellow-300">StackBase</span> player NFT has been minted
+            </p>
+            <p className="text-white/40 text-sm">Starting game...</p>
+          </div>
+        </animated.div>
+      )}
     </div>
   );
 }
