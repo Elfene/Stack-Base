@@ -1,7 +1,9 @@
 'use client';
 
-import { useAccount, useWriteContract, useReadContract } from 'wagmi';
+import { useAccount, useWriteContract, useReadContract, useSendCalls } from 'wagmi';
 import { CONTRACT_ADDRESS, CONTRACT_ABI } from '@/lib/constants';
+
+const PAYMASTER_URL = process.env.NEXT_PUBLIC_PAYMASTER_URL || '';
 
 let usePrivyHook: () => {
   login: () => void;
@@ -41,6 +43,7 @@ export function useWallet() {
 
   const { address, isConnected } = useAccount();
   const { writeContractAsync } = useWriteContract();
+  const { sendCallsAsync } = useSendCalls();
 
   const { data: playerStats } = useReadContract({
     address: CONTRACT_ADDRESS,
@@ -58,56 +61,52 @@ export function useWallet() {
     query: { enabled: !!address, refetchInterval: 60000 },
   });
 
+  async function sponsoredCall(functionName: 'play' | 'checkIn' | 'submitScore', args?: readonly unknown[]) {
+    if (PAYMASTER_URL) {
+      try {
+        await sendCallsAsync({
+          calls: [
+            {
+              to: CONTRACT_ADDRESS,
+              abi: CONTRACT_ABI,
+              functionName,
+              args: args as never,
+            },
+          ],
+          capabilities: {
+            paymasterService: {
+              url: PAYMASTER_URL,
+            },
+          },
+        });
+        return true;
+      } catch {
+        // fallback to regular tx if paymaster fails
+      }
+    }
+
+    await writeContractAsync({
+      address: CONTRACT_ADDRESS,
+      abi: CONTRACT_ABI,
+      functionName,
+      args: args as never,
+    });
+    return true;
+  }
+
   const play = async () => {
-    if (!isConnected) {
-      login();
-      return false;
-    }
-    try {
-      await writeContractAsync({
-        address: CONTRACT_ADDRESS,
-        abi: CONTRACT_ABI,
-        functionName: 'play',
-      });
-      return true;
-    } catch {
-      return false;
-    }
+    if (!isConnected) { login(); return false; }
+    try { return await sponsoredCall('play'); } catch { return false; }
   };
 
   const checkIn = async () => {
-    if (!isConnected) {
-      login();
-      return false;
-    }
-    try {
-      await writeContractAsync({
-        address: CONTRACT_ADDRESS,
-        abi: CONTRACT_ABI,
-        functionName: 'checkIn',
-      });
-      return true;
-    } catch {
-      return false;
-    }
+    if (!isConnected) { login(); return false; }
+    try { return await sponsoredCall('checkIn'); } catch { return false; }
   };
 
   const submitScore = async (score: number) => {
-    if (!isConnected) {
-      login();
-      return false;
-    }
-    try {
-      await writeContractAsync({
-        address: CONTRACT_ADDRESS,
-        abi: CONTRACT_ABI,
-        functionName: 'submitScore',
-        args: [BigInt(score)],
-      });
-      return true;
-    } catch {
-      return false;
-    }
+    if (!isConnected) { login(); return false; }
+    try { return await sponsoredCall('submitScore', [BigInt(score)]); } catch { return false; }
   };
 
   const stats = playerStats
