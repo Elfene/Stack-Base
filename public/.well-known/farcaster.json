@@ -16,6 +16,7 @@
     "primaryCategory": "games",
     "tags": ["arcade", "casual", "3d", "highscore", "base"],
     "requiredChains": ["eip155:8453"],
+    "canonicalDomain": "stackbased.vercel.app",
     "requiredCapabilities": []
   }
 }

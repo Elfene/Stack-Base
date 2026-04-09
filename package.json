@@ -10,7 +10,6 @@
   },
   "dependencies": {
     "@base-org/account": "^2.5.3",
-    "@privy-io/react-auth": "^3.19.1",
     "@react-spring/web": "^10.0.3",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.5.0",
