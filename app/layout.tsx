@@ -9,11 +9,14 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://stackbased.vercel.app'),
   title: 'BlockStack - 3D Tower Stacking Game on Base',
   description: 'Stack blocks perfectly in this addictive 3D tower game on Base blockchain. Compete for the highest score on-chain!',
   openGraph: {
     title: 'BlockStack',
     description: 'Stack blocks perfectly in this addictive 3D tower game on Base',
+    url: 'https://stackbased.vercel.app',
+    type: 'website',
     images: ['/thumbnail.png'],
   },
   twitter: {

@@ -1,6 +1,6 @@
 import { http, createConfig, createStorage, cookieStorage } from 'wagmi';
 import { base } from 'wagmi/chains';
-import { coinbaseWallet, injected } from 'wagmi/connectors';
+import { baseAccount, injected } from 'wagmi/connectors';
 import { Attribution } from 'ox/erc8021';
 
 const DATA_SUFFIX = Attribution.toDataSuffix({
@@ -11,9 +11,8 @@ export const wagmiConfig = createConfig({
   chains: [base],
   connectors: [
     injected(),
-    coinbaseWallet({
+    baseAccount({
       appName: 'BlockStack',
-      preference: { options: 'smartWalletOnly' },
     }),
   ],
   storage: createStorage({ storage: cookieStorage }),
@@ -23,3 +22,9 @@ export const wagmiConfig = createConfig({
   dataSuffix: DATA_SUFFIX,
   ssr: true,
 });
+
+declare module 'wagmi' {
+  interface Register {
+    config: typeof wagmiConfig;
+  }
+}
